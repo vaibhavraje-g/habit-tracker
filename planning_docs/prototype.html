@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ascend - Personal Growth Dashboard</title>
+    <style>
+        /* === DESIGN SYSTEM === */
+        :root {
+            /* Pastel Color Palette */
+            --pastel-green: #a7f3d0;
+            --pastel-green-med: #6ee7b7;
+            --pastel-green-dark: #34d399;
+            
+            --pastel-blue: #bfdbfe;
+            --pastel-blue-med: #93c5fd;
+            --pastel-blue-dark: #60a5fa;
+            
+            --pastel-mint: #99f6e4;
+            --pastel-lavender: #ddd6fe;
+            --pastel-rose: #fecdd3;
+            
+            /* Dark Mode Base */
+            --bg-primary: #1e293b;
+            --bg-secondary: #0f172a;
+            --bg-card: #2d3748;
+            
+            /* Text */
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            
+            /* Functional */
+            --success: var(--pastel-green-med);
+            --warning: #fbbf24;
+            --error: var(--pastel-rose);
+            
+            /* Spacing */
+            --space-xs: 8px;
+            --space-sm: 12px;
+            --space-md: 20px;
+            --space-lg: 32px;
+            --space-xl: 48px;
+            
+            /* Border Radius */
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-full: 9999px;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        /* === GLOBAL RESET === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* === LAYOUT === */
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding: var(--space-lg) var(--space-md);
+            padding-bottom: 120px;
+        }
+
+        /* === HEADER === */
+        .header {
+            margin-bottom: var(--space-xl);
+        }
+
+        .greeting {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: var(--space-xs);
+            background: linear-gradient(135deg, var(--pastel-blue), var(--pastel-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subheading {
+            color: var(--text-tertiary);
+            font-size: 0.95rem;
+        }
+
+        /* === SCORE CARD === */
+        .score-card {
+            background: linear-gradient(135deg, rgba(147, 197, 253, 0.1), rgba(110, 231, 183, 0.1));
+            border: 1px solid rgba(147, 197, 253, 0.2);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .score-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(147, 197, 253, 0.15), transparent);
+            border-radius: 50%;
+        }
+
+        .score-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-md);
+            position: relative;
+            z-index: 1;
+        }
+
+        .score-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .score-value {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+            margin: var(--space-sm) 0;
+        }
+
+        .score-trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .score-trend.up {
+            background: rgba(110, 231, 183, 0.2);
+            color: var(--pastel-green-med);
+        }
+
+        .score-trend.down {
+            background: rgba(254, 205, 211, 0.2);
+            color: var(--pastel-rose);
+        }
+
+        /* === CHART === */
+        .chart-container {
+            width: 100%;
+            height: 100px;
+            margin-top: var(--space-md);
+            position: relative;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-line {
+            fill: none;
+            stroke: var(--pastel-blue-med);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 2px 4px rgba(147, 197, 253, 0.4));
+            transition: d 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chart-area {
+            fill: url(#gradient);
+            opacity: 0.3;
+            transition: d 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chart-dot {
+            fill: white;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+            transition: cx 0.8s ease, cy 0.8s ease;
+        }
+
+        .chart-grid {
+            stroke: rgba(203, 213, 225, 0.1);
+            stroke-width: 1;
+        }
+
+        /* === GOALS SECTION === */
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: var(--space-md);
+            color: var(--text-primary);
+        }
+
+        .goals-grid {
+            display: grid;
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
+        }
+
+        .goal-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .goal-card:active {
+            transform: scale(0.98);
+        }
+
+        .goal-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+        }
+
+        .goal-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .goal-info {
+            flex: 1;
+        }
+
+        .goal-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .goal-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: var(--space-sm);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: var(--radius-full);
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Sparkline */
+        .sparkline {
+            display: flex;
+            gap: 3px;
+            height: 32px;
+            align-items: flex-end;
+            margin-top: var(--space-sm);
+        }
+
+        .spark-bar {
+            flex: 1;
+            background: currentColor;
+            border-radius: 2px;
+            opacity: 0.3;
+            transition: height 0.6s ease, opacity 0.3s ease;
+        }
+
+        .spark-bar:last-child {
+            opacity: 0.8;
+        }
+
+        /* === FLOATING ACTION BUTTON === */
+        .fab-container {
+            position: fixed;
+            bottom: var(--space-lg);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+
+        .fab {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, var(--pastel-blue-med), var(--pastel-green-med));
+            border: none;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .fab::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, var(--pastel-blue-med), var(--pastel-green-med));
+            opacity: 0.5;
+            filter: blur(12px);
+            z-index: -1;
+        }
+
+        .fab:hover {
+            transform: scale(1.05);
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        .fab.listening {
+            animation: pulse 1.5s infinite;
+            background: linear-gradient(135deg, var(--pastel-rose), #fbbf24);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        /* === VOICE MODAL === */
+        .voice-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .voice-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .voice-orb {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--pastel-blue), var(--pastel-blue-dark));
+            box-shadow: 0 0 60px var(--pastel-blue-med);
+            margin-bottom: var(--space-lg);
+            transition: all 0.5s ease;
+        }
+
+        .voice-orb.listening {
+            background: radial-gradient(circle at 30% 30%, var(--pastel-green), var(--pastel-green-dark));
+            box-shadow: 0 0 80px var(--pastel-green-med);
+            animation: pulse 1.5s infinite;
+        }
+
+        .voice-orb.thinking {
+            background: radial-gradient(circle at 30% 30%, var(--pastel-lavender), #a78bfa);
+            box-shadow: 0 0 70px var(--pastel-lavender);
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .voice-status {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-sm);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .voice-transcript {
+            max-width: 80%;
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: 0.95rem;
+            margin-bottom: var(--space-lg);
+            min-height: 2em;
+        }
+
+        .voice-close {
+            padding: 12px 32px;
+            border-radius: var(--radius-full);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .voice-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* === UTILITIES === */
+        .fade-in {
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header fade-in">
+            <h1 class="greeting">Hello, Alex 👋</h1>
+            <p class="subheading">Let's make today count</p>
+        </header>
+
+        <!-- Score Card -->
+        <div class="score-card fade-in">
+            <div class="score-header">
+                <div>
+                    <div class="score-label">Ascend Score</div>
+                    <div class="score-value" id="score">84</div>
+                </div>
+                <div class="score-trend up" id="trend">
+                    <span>↑</span>
+                    <span id="trend-val">+2.4</span>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <svg viewBox="0 0 280 100" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="gradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stop-color="#93c5fd" stop-opacity="0.8"/>
+                            <stop offset="100%" stop-color="#6ee7b7" stop-opacity="0.1"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Grid lines -->
+                    <line x1="0" y1="25" x2="280" y2="25" class="chart-grid"/>
+                    <line x1="0" y1="50" x2="280" y2="50" class="chart-grid"/>
+                    <line x1="0" y1="75" x2="280" y2="75" class="chart-grid"/>
+                    <!-- Data -->
+                    <path id="area" class="chart-area"/>
+                    <path id="line" class="chart-line"/>
+                    <circle id="dot" class="chart-dot" r="4"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Goals Section -->
+        <section class="goals-section fade-in">
+            <h2 class="section-title">Today's Goals</h2>
+            <div class="goals-grid">
+                
+                <!-- Coding Goal -->
+                <div class="goal-card" id="goal-coding">
+                    <div class="goal-header">
+                        <div class="goal-icon" style="background: rgba(147, 197, 253, 0.2);">💻</div>
+                        <div class="goal-info">
+                            <div class="goal-title">Coding Challenge</div>
+                            <div class="goal-subtitle">2 of 3 this week</div>
+                        </div>
+                    </div>
+                    <div class="sparkline" id="coding-spark" style="color: #93c5fd;"></div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 67%; background: linear-gradient(90deg, #60a5fa, #93c5fd);"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>67% complete</span>
+                            <span>1 more to go</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nutrition Goal -->
+                <div class="goal-card" id="goal-nutrition">
+                    <div class="goal-header">
+                        <div class="goal-icon" style="background: rgba(110, 231, 183, 0.2);">🥗</div>
+                        <div class="goal-info">
+                            <div class="goal-title">Healthy Eating</div>
+                            <div class="goal-subtitle">4 day streak</div>
+                        </div>
+                    </div>
+                    <div class="sparkline" id="nutrition-spark" style="color: #6ee7b7;"></div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 85%; background: linear-gradient(90deg, #34d399, #6ee7b7);"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>85% on track</span>
+                            <span>Great job!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Digital Detox Goal -->
+                <div class="goal-card" id="goal-detox">
+                    <div class="goal-header">
+                        <div class="goal-icon" style="background: rgba(254, 205, 211, 0.2);">📵</div>
+                        <div class="goal-info">
+                            <div class="goal-title">Screen Time</div>
+                            <div class="goal-subtitle">30 min limit</div>
+                        </div>
+                    </div>
+                    <div class="sparkline" id="detox-spark" style="color: #fecdd3;"></div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 40%; background: linear-gradient(90deg, #fb7185, #fecdd3);"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>12 min used</span>
+                            <span>18 min left</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab-container">
+        <button class="fab" id="fabBtn">🎤</button>
+    </div>
+
+    <!-- Voice Modal -->
+    <div class="voice-modal" id="voiceModal">
+        <div class="voice-orb" id="voiceOrb"></div>
+        <div class="voice-status" id="voiceStatus">Tap to speak</div>
+        <div class="voice-transcript" id="voiceTranscript">...</div>
+        <button class="voice-close" id="closeBtn">Close</button>
+    </div>
+
+    <script>
+        // === APP STATE ===
+        const state = {
+            score: 84,
+            history: [65, 68, 70, 72, 75, 74, 76, 78, 80, 79, 82, 85, 84, 84],
+            goals: {
+                coding: { progress: 67, sparkline: [40, 60, 20, 80, 90, 67, 67] },
+                nutrition: { progress: 85, sparkline: [80, 90, 100, 100, 80, 85, 85] },
+                detox: { progress: 40, sparkline: [90, 80, 50, 45, 60, 40, 40] }
+            },
+            isVoiceActive: false,
+            isListening: false
+        };
+
+        // === DOM ELEMENTS ===
+        const elements = {
+            score: document.getElementById('score'),
+            trend: document.getElementById('trend'),
+            trendVal: document.getElementById('trend-val'),
+            line: document.getElementById('line'),
+            area: document.getElementById('area'),
+            dot: document.getElementById('dot'),
+            fabBtn: document.getElementById('fabBtn'),
+            voiceModal: document.getElementById('voiceModal'),
+            voiceOrb: document.getElementById('voiceOrb'),
+            voiceStatus: document.getElementById('voiceStatus'),
+            voiceTranscript: document.getElementById('voiceTranscript'),
+            closeBtn: document.getElementById('closeBtn')
+        };
+
+        // === CHART RENDERING ===
+        function renderChart() {
+            const data = state.history;
+            const width = 280;
+            const height = 100;
+            const padding = 10;
+
+            const max = Math.max(...data);
+            const min = Math.min(...data);
+            const range = max - min || 1;
+
+            const getX = (i) => (i / (data.length - 1)) * width;
+            const getY = (val) => height - padding - ((val - min) / range) * (height - 2 * padding);
+
+            // Create smooth path
+            let pathData = `M ${getX(0)} ${getY(data[0])}`;
+            
+            for (let i = 0; i < data.length - 1; i++) {
+                const x1 = getX(i);
+                const y1 = getY(data[i]);
+                const x2 = getX(i + 1);
+                const y2 = getY(data[i + 1]);
+                
+                const cpx1 = x1 + (x2 - x1) * 0.5;
+                const cpy1 = y1;
+                const cpx2 = x1 + (x2 - x1) * 0.5;
+                const cpy2 = y2;
+                
+                pathData += ` C ${cpx1} ${cpy1}, ${cpx2} ${cpy2}, ${x2} ${y2}`;
+            }
+
+            elements.line.setAttribute('d', pathData);
+            elements.area.setAttribute('d', `${pathData} L ${width} ${height} L 0 ${height} Z`);
+            
+            const lastX = getX(data.length - 1);
+            const lastY = getY(data[data.length - 1]);
+            elements.dot.setAttribute('cx', lastX);
+            elements.dot.setAttribute('cy', lastY);
+
+            // Update trend
+            const current = data[data.length - 1];
+            const previous = data[data.length - 2];
+            const diff = current - previous;
+            
+            if (diff >= 0) {
+                elements.trend.className = 'score-trend up';
+                elements.trend.innerHTML = `<span>↑</span><span>+${diff.toFixed(1)}</span>`;
+            } else {
+                elements.trend.className = 'score-trend down';
+                elements.trend.innerHTML = `<span>↓</span><span>${diff.toFixed(1)}</span>`;
+            }
+        }
+
+        // === SPARKLINE RENDERING ===
+        function renderSparklines() {
+            ['coding', 'nutrition', 'detox'].forEach(key => {
+                const container = document.getElementById(`${key}-spark`);
+                container.innerHTML = '';
+                const data = state.goals[key].sparkline;
+                
+                data.forEach(val => {
+                    const bar = document.createElement('div');
+                    bar.className = 'spark-bar';
+                    bar.style.height = `${val}%`;
+                    container.appendChild(bar);
+                });
+            });
+        }
+
+        // === VOICE INTERFACE ===
+        function openVoiceModal() {
+            state.isVoiceActive = true;
+            elements.voiceModal.classList.add('active');
+            elements.voiceStatus.textContent = 'Tap to speak';
+            elements.voiceTranscript.textContent = '...';
+        }
+
+        function closeVoiceModal() {
+            state.isVoiceActive = false;
+            state.isListening = false;
+            elements.voiceModal.classList.remove('active');
+            elements.voiceOrb.className = 'voice-orb';
+            elements.fabBtn.classList.remove('listening');
+        }
+
+        function simulateVoiceInteraction() {
+            if (!state.isVoiceActive) return;
+
+            if (!state.isListening) {
+                // Start listening
+                state.isListening = true;
+                elements.voiceOrb.classList.add('listening');
+                elements.fabBtn.classList.add('listening');
+                elements.voiceStatus.textContent = 'Listening...';
+                
+                setTimeout(() => {
+                    elements.voiceTranscript.textContent = '"I completed my coding challenge today"';
+                    
+                    setTimeout(() => {
+                        // Stop listening, start thinking
+                        elements.voiceOrb.className = 'voice-orb thinking';
+                        elements.voiceStatus.textContent = 'Processing...';
+                        
+                        setTimeout(() => {
+                            // Respond
+                            elements.voiceOrb.className = 'voice-orb';
+                            elements.voiceStatus.textContent = 'Response';
+                            elements.voiceTranscript.textContent = 'Excellent! Your coding challenge is marked complete. Your Ascend score increased by 2 points.';
+                            elements.fabBtn.classList.remove('listening');
+                            
+                            // Update data
+                            state.score += 2;
+                            state.history[state.history.length - 1] = state.score;
+                            state.goals.coding.progress = 100;
+                            state.goals.coding.sparkline.shift();
+                            state.goals.coding.sparkline.push(100);
+                            
+                            elements.score.textContent = state.score;
+                            renderChart();
+                            renderSparklines();
+                            
+                            setTimeout(() => {
+                                state.isListening = false;
+                                elements.voiceStatus.textContent = 'Tap to speak';
+                            }, 3000);
+                        }, 1500);
+                    }, 2000);
+                }, 2000);
+            }
+        }
+
+        // === EVENT LISTENERS ===
+        elements.fabBtn.addEventListener('click', openVoiceModal);
+        elements.closeBtn.addEventListener('click', closeVoiceModal);
+        elements.voiceOrb.addEventListener('click', simulateVoiceInteraction);
+
+        // === INITIALIZATION ===
+        window.addEventListener('load', () => {
+            renderChart();
+            renderSparklines();
+        });
+    </script>
+</body>
+</html>

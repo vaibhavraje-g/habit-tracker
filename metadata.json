@@ -1,0 +1,7 @@
+{
+  "name": "Ascend - Personal Growth",
+  "description": "A dynamic personal growth dashboard with simulated AI voice coaching and goal tracking.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

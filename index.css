@@ -1,0 +1,30 @@
+/* Custom styles for Ascend - Habit Tracker */
+
+/* Custom scrollbar - duplicated here for non-dark mode support */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent; 
+}
+::-webkit-scrollbar-thumb {
+    background: #78716c; 
+    border-radius: 3px;
+}
+
+/* Base resets */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+/* Smooth transitions for theme switching */
+* {
+    transition-property: background-color, border-color, color;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+}

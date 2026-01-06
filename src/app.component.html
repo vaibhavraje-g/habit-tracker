@@ -1,0 +1,158 @@
+
+<div class="max-w-md mx-auto min-h-screen px-5 py-8 pb-32">
+  
+  <!-- Header -->
+  <header class="mb-6 animate-fade-in-up flex justify-between items-end">
+    @if (user()) {
+      <div>
+        <h1 class="text-3xl font-bold text-stone-900 dark:text-stone-100 mb-1">
+          Hello, {{ user()!.name }}
+        </h1>
+        <p class="text-stone-500 text-sm">Let's make today count.</p>
+      </div>
+      
+      <div class="flex gap-3">
+          <!-- Theme Toggle -->
+          <button (click)="themeService.cycleMode()"
+                  class="w-10 h-10 rounded-full bg-stone-200 dark:bg-stone-800 flex items-center justify-center text-sm border border-stone-300 dark:border-stone-700 text-stone-600 dark:text-stone-300 transition-colors">
+             @if (themeService.mode() === 'light') { ☀️ }
+             @if (themeService.mode() === 'dark') { 🌙 }
+             @if (themeService.mode() === 'auto') { 🤖 }
+          </button>
+          
+          <!-- User Profile Placeholder -->
+          <div class="w-10 h-10 rounded-full bg-stone-200 dark:bg-stone-800 flex items-center justify-center text-sm border border-stone-300 dark:border-stone-700 text-stone-600 dark:text-stone-300">
+            👤
+          </div>
+      </div>
+    }
+  </header>
+
+  <!-- Score Card -->
+  @if (user()) {
+    <app-score-card 
+      [score]="user()!.score" 
+      [history]="user()!.history">
+    </app-score-card>
+  }
+
+  <!-- Tab Switcher -->
+  <div class="flex p-1 bg-stone-200 dark:bg-stone-800 rounded-xl mb-6 animate-fade-in-up" style="animation-delay: 50ms;">
+      <button (click)="activeTab.set('focus')"
+              class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300"
+              [class.bg-white]="activeTab() === 'focus'"
+              [class.dark:bg-stone-700]="activeTab() === 'focus'"
+              [class.text-stone-900]="activeTab() === 'focus'"
+              [class.dark:text-white]="activeTab() === 'focus'"
+              [class.shadow-sm]="activeTab() === 'focus'"
+              [class.text-stone-500]="activeTab() !== 'focus'">
+          Focus
+      </button>
+      <button (click)="activeTab.set('manifest')"
+              class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300"
+              [class.bg-white]="activeTab() === 'manifest'"
+              [class.dark:bg-pastel-violetDark]="activeTab() === 'manifest'"
+              [class.text-stone-900]="activeTab() === 'manifest'"
+              [class.dark:text-stone-900]="activeTab() === 'manifest'"
+              [class.shadow-sm]="activeTab() === 'manifest'"
+              [class.text-stone-500]="activeTab() !== 'manifest'">
+          Manifest
+      </button>
+      <button (click)="activeTab.set('wellness')"
+              class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300"
+              [class.bg-white]="activeTab() === 'wellness'"
+              [class.dark:bg-pastel-cyanDark]="activeTab() === 'wellness'"
+              [class.text-stone-900]="activeTab() === 'wellness'"
+              [class.dark:text-stone-900]="activeTab() === 'wellness'"
+              [class.shadow-sm]="activeTab() === 'wellness'"
+              [class.text-stone-500]="activeTab() !== 'wellness'">
+          Wellness
+      </button>
+  </div>
+
+  <!-- Content Section -->
+  <section class="animate-fade-in-up min-h-[300px]" style="animation-delay: 100ms;">
+    
+    <!-- Focus/Goals View -->
+    @if (activeTab() === 'focus') {
+        <h2 class="text-sm font-bold uppercase tracking-widest text-stone-500 mb-5 pl-1">Daily Goals</h2>
+        <div class="grid gap-4">
+          @if (goals()) {
+            @for (goal of goals(); track goal.id) {
+              <app-goal-card [goal]="goal"></app-goal-card>
+            }
+          } @else {
+            <div class="h-32 bg-stone-200 dark:bg-stone-850 rounded-xl animate-pulse"></div>
+          }
+        </div>
+    }
+
+    <!-- Manifestation View -->
+    @if (activeTab() === 'manifest') {
+        <h2 class="text-sm font-bold uppercase tracking-widest text-pastel-violetDark mb-5 pl-1">Visions & Rituals</h2>
+        <div class="grid gap-4">
+            @if (manifestations()) {
+                @for (item of manifestations(); track item.id) {
+                    <app-manifestation-card [item]="item"></app-manifestation-card>
+                }
+            } @else {
+                <div class="h-32 bg-stone-200 dark:bg-stone-850 rounded-xl animate-pulse"></div>
+            }
+        </div>
+    }
+
+    <!-- Wellness View -->
+    @if (activeTab() === 'wellness') {
+        <h2 class="text-sm font-bold uppercase tracking-widest text-pastel-cyanDark mb-5 pl-1">Mind & Body</h2>
+        
+        <!-- Breathing Guide -->
+        @if (breathPatterns(); as patterns) {
+            <app-breath-guide [patterns]="patterns"></app-breath-guide>
+        }
+
+        <!-- Frequency Player -->
+        @if (sounds(); as soundTracks) {
+            <app-sound-player [tracks]="soundTracks"></app-sound-player>
+        }
+    }
+
+  </section>
+</div>
+
+<!-- Floating Action Button -->
+<div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
+  <button (click)="openVoice()"
+          class="w-16 h-16 rounded-full text-white dark:text-stone-900 text-2xl shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group border-4 border-white dark:border-stone-900"
+          [class.bg-lime-500]="activeTab() === 'focus'"
+          [class.dark:bg-pastel-limeDark]="activeTab() === 'focus'"
+          [class.shadow-lime-900/20]="activeTab() === 'focus'"
+          
+          [class.bg-violet-500]="activeTab() === 'manifest'"
+          [class.dark:bg-pastel-violetDark]="activeTab() === 'manifest'"
+          [class.shadow-violet-900/20]="activeTab() === 'manifest'"
+          
+          [class.bg-cyan-500]="activeTab() === 'wellness'"
+          [class.dark:bg-pastel-cyanDark]="activeTab() === 'wellness'"
+          [class.shadow-cyan-900/20]="activeTab() === 'wellness'">
+    <span class="group-hover:animate-pulse">🎤</span>
+  </button>
+</div>
+
+<!-- Voice Modal Overlay -->
+<app-voice-modal 
+  [isActive]="isVoiceActive()"
+  [state]="voiceState()"
+  [transcript]="voiceTranscript()"
+  (close)="closeVoice()"
+  (startListening)="startListening()">
+</app-voice-modal>
+
+<style>
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+</style>

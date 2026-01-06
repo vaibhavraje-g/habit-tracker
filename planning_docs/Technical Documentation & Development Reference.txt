@@ -1,0 +1,799 @@
+# Ascend - Personal Growth Dashboard
+## Technical Documentation & Development Reference
+
+---
+
+## 1. Product Overview
+
+### Purpose
+Ascend is a personal growth tracking application that helps users monitor daily habits, visualize progress, and receive AI-powered coaching through voice interaction.
+
+### Core Features
+- **Real-time score tracking** - Overall progress metric (0-100)
+- **Multi-goal management** - Track coding, nutrition, screen time, etc.
+- **Visual analytics** - Smooth charts and sparklines
+- **Voice interface** - Natural language progress updates
+- **Trend analysis** - Automatic progress calculations
+
+---
+
+## 2. Design System
+
+### Color Palette
+
+#### Primary Colors (Pastel Theme)
+```
+Greens (Success/Progress)
+- Light: #a7f3d0
+- Medium: #6ee7b7
+- Dark: #34d399
+
+Blues (Neutral/Info)
+- Light: #bfdbfe
+- Medium: #93c5fd
+- Dark: #60a5fa
+
+Accents
+- Mint: #99f6e4
+- Lavender: #ddd6fe (thinking state)
+- Rose: #fecdd3 (alerts/warnings)
+- Gold: #fbbf24 (warnings)
+```
+
+#### Background Colors (Dark Mode)
+```
+- Primary: #1e293b
+- Secondary: #0f172a
+- Card: #2d3748
+```
+
+#### Text Colors
+```
+- Primary: #f8fafc (main text)
+- Secondary: #cbd5e1 (subheadings)
+- Tertiary: #94a3b8 (labels, muted)
+```
+
+### Spacing Scale
+```
+XS: 8px   (tight gaps)
+SM: 12px  (small padding)
+MD: 20px  (standard padding)
+LG: 32px  (section spacing)
+XL: 48px  (major sections)
+```
+
+### Border Radius
+```
+SM: 8px   (small elements)
+MD: 16px  (cards, buttons)
+LG: 24px  (main cards)
+FULL: 50% (circular elements)
+```
+
+### Typography
+```
+Font Family: -apple-system, Inter, Roboto
+Base Size: 16px
+Line Height: 1.6
+
+Heading 1: 1.75rem / 28px (greeting)
+Heading 2: 1.1rem / 18px (sections)
+Score Value: 3.5rem / 56px (main metric)
+Body: 0.95rem / 15px
+Small: 0.85rem / 14px
+Tiny: 0.75rem / 12px (labels)
+```
+
+---
+
+## 3. Component Architecture
+
+### 3.1 Score Card Component
+
+**Purpose**: Display overall Ascend score with trend visualization
+
+**Data Structure**:
+```javascript
+{
+  score: 84,           // Current score (0-100)
+  history: [65, 68...], // Last 14 days
+  trend: 'up'          // 'up', 'down', 'neutral'
+}
+```
+
+**Key Features**:
+- Smooth bezier curve chart
+- Animated gradient fill
+- Active dot indicator
+- Trend badge (↑/↓)
+- Grid lines for readability
+
+**Animation Timing**:
+- Path transition: 0.8s cubic-bezier
+- Dot movement: 0.8s ease
+- Color changes: 1s ease
+
+---
+
+### 3.2 Goal Card Component
+
+**Purpose**: Track individual habit/goal progress
+
+**Data Structure**:
+```javascript
+{
+  title: "Coding Challenge",
+  icon: "💻",
+  subtitle: "2 of 3 this week",
+  progress: 67,               // Percentage (0-100)
+  sparkline: [40, 60, 20...], // Last 7 days
+  color: "#93c5fd"
+}
+```
+
+**Sub-components**:
+- **Icon badge** - Visual identifier
+- **Sparkline** - 7-day mini bar chart
+- **Progress bar** - Animated fill with shimmer
+- **Progress text** - Current status + motivational text
+
+**Interaction**:
+- Tap to expand (future feature)
+- Active state on press (scale 0.98)
+
+---
+
+### 3.3 Voice Interface
+
+**Purpose**: Natural language interaction for progress updates
+
+**States**:
+```javascript
+{
+  idle: {
+    orb: 'blue gradient',
+    status: 'Tap to speak'
+  },
+  listening: {
+    orb: 'green gradient + pulse',
+    status: 'Listening...',
+    fabState: 'pulsing red'
+  },
+  thinking: {
+    orb: 'lavender + spin',
+    status: 'Processing...'
+  },
+  responding: {
+    orb: 'blue gradient',
+    status: 'Response',
+    duration: '3s'
+  }
+}
+```
+
+**User Flow**:
+1. User taps FAB → Modal opens
+2. User taps orb → Listening starts (2s)
+3. Transcript appears → Thinking state (1.5s)
+4. Response shown → Data updates
+5. Auto-reset after 3s or manual close
+
+---
+
+## 4. Data Model
+
+### Application State
+```javascript
+const state = {
+  // User Info
+  user: {
+    name: "Alex",
+    timezone: "UTC-5"
+  },
+  
+  // Main Score
+  score: 84,
+  history: [65, 68, 70...], // 14 days
+  lastUpdated: "2024-01-15T10:30:00Z",
+  
+  // Goals Collection
+  goals: {
+    coding: {
+      id: "coding",
+      title: "Coding Challenge",
+      icon: "💻",
+      target: 3,              // per week
+      current: 2,
+      progress: 67,           // calculated: (2/3)*100
+      sparkline: [40, 60...], // daily completion %
+      color: "#93c5fd",
+      category: "skill"
+    },
+    nutrition: {
+      id: "nutrition",
+      title: "Healthy Eating",
+      icon: "🥗",
+      streak: 4,              // consecutive days
+      progress: 85,
+      sparkline: [80, 90...],
+      color: "#6ee7b7",
+      category: "health"
+    },
+    detox: {
+      id: "detox",
+      title: "Screen Time",
+      icon: "📵",
+      dailyLimit: 30,         // minutes
+      used: 12,
+      progress: 40,           // inverted: (12/30)*100
+      sparkline: [90, 80...],
+      color: "#fecdd3",
+      category: "wellness"
+    }
+  },
+  
+  // Voice State
+  voice: {
+    isActive: false,
+    isListening: false,
+    lastTranscript: "",
+    lastResponse: ""
+  }
+}
+```
+
+---
+
+## 5. Algorithm: Score Calculation
+
+### Overall Ascend Score
+```javascript
+function calculateAscendScore(goals) {
+  const weights = {
+    coding: 0.35,    // 35% of total
+    nutrition: 0.30, // 30% of total
+    detox: 0.25,     // 25% of total
+    bonus: 0.10      // 10% for streaks/consistency
+  };
+  
+  let score = 0;
+  
+  // Weighted average of goals
+  Object.keys(weights).forEach(key => {
+    if (key === 'bonus') {
+      score += calculateBonusPoints(goals);
+    } else {
+      score += goals[key].progress * weights[key];
+    }
+  });
+  
+  return Math.round(score);
+}
+
+function calculateBonusPoints(goals) {
+  let bonus = 0;
+  
+  // Streak bonus (nutrition)
+  if (goals.nutrition.streak >= 7) bonus += 3;
+  else if (goals.nutrition.streak >= 4) bonus += 2;
+  
+  // Consistency bonus (all goals > 60%)
+  const allGood = Object.values(goals)
+    .every(g => g.progress >= 60);
+  if (allGood) bonus += 2;
+  
+  return bonus;
+}
+```
+
+### Trend Calculation
+```javascript
+function calculateTrend(history) {
+  const current = history[history.length - 1];
+  const previous = history[history.length - 2];
+  const diff = current - previous;
+  
+  return {
+    direction: diff >= 0 ? 'up' : 'down',
+    value: Math.abs(diff).toFixed(1),
+    color: diff >= 0 ? '#6ee7b7' : '#fecdd3'
+  };
+}
+```
+
+---
+
+## 6. Chart Rendering
+
+### Smooth Bezier Curve
+```javascript
+function createSmoothPath(data, width, height) {
+  const normalize = (val, min, max) => 
+    ((val - min) / (max - min)) * height;
+  
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  
+  let path = `M 0 ${normalize(data[0], min, max)}`;
+  
+  for (let i = 0; i < data.length - 1; i++) {
+    const x1 = (i / (data.length - 1)) * width;
+    const x2 = ((i + 1) / (data.length - 1)) * width;
+    const y1 = normalize(data[i], min, max);
+    const y2 = normalize(data[i + 1], min, max);
+    
+    // Bezier control points
+    const cpx1 = x1 + (x2 - x1) * 0.5;
+    const cpx2 = x1 + (x2 - x1) * 0.5;
+    
+    path += ` C ${cpx1} ${y1}, ${cpx2} ${y2}, ${x2} ${y2}`;
+  }
+  
+  return path;
+}
+```
+
+### Sparkline Bars
+```javascript
+function renderSparkline(data, container) {
+  container.innerHTML = '';
+  
+  data.forEach((value, index) => {
+    const bar = document.createElement('div');
+    bar.className = 'spark-bar';
+    bar.style.height = `${value}%`;
+    
+    // Highlight last bar (today)
+    if (index === data.length - 1) {
+      bar.style.opacity = '0.8';
+    }
+    
+    container.appendChild(bar);
+  });
+}
+```
+
+---
+
+## 7. Voice Processing Flow
+
+### Natural Language Understanding
+```javascript
+const voiceCommands = {
+  // Completion patterns
+  completed: [
+    "completed {goal}",
+    "finished {goal}",
+    "done with {goal}",
+    "checked off {goal}"
+  ],
+  
+  // Query patterns
+  status: [
+    "how am I doing",
+    "what's my score",
+    "show my progress",
+    "check my stats"
+  ],
+  
+  // Goal-specific
+  goals: [
+    "coding challenge",
+    "nutrition",
+    "diet",
+    "screen time",
+    "social media"
+  ]
+};
+
+function parseVoiceInput(transcript) {
+  const lower = transcript.toLowerCase();
+  
+  // Check for completion
+  if (lower.includes('completed') || lower.includes('finished')) {
+    for (const goal of voiceCommands.goals) {
+      if (lower.includes(goal)) {
+        return {
+          action: 'complete',
+          target: goal,
+          confidence: 0.95
+        };
+      }
+    }
+  }
+  
+  // Check for status query
+  if (lower.includes('how') || lower.includes('score')) {
+    return {
+      action: 'status',
+      confidence: 0.9
+    };
+  }
+  
+  return {
+    action: 'unknown',
+    confidence: 0.3
+  };
+}
+```
+
+### Response Templates
+```javascript
+const responses = {
+  goalComplete: (goal, newScore) => 
+    `Excellent! Your ${goal} is marked complete. Your Ascend score increased to ${newScore}.`,
+  
+  statusUpdate: (score, trend) =>
+    `Your current Ascend score is ${score}, ${trend === 'up' ? 'up' : 'down'} from yesterday.`,
+  
+  encouragement: [
+    "Keep up the great work!",
+    "You're on fire today!",
+    "Impressive progress!",
+    "Way to stay consistent!"
+  ]
+};
+```
+
+---
+
+## 8. Animation Specifications
+
+### Transitions
+```css
+/* Smooth data updates */
+.chart-line, .chart-area {
+  transition: d 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Progress bars */
+.progress-fill {
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Interactive elements */
+.goal-card, .fab {
+  transition: transform 0.3s ease;
+}
+.goal-card:active { transform: scale(0.98); }
+.fab:active { transform: scale(0.95); }
+```
+
+### Keyframe Animations
+```css
+/* Shimmer effect on progress bars */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Voice orb pulse */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+/* Thinking spin */
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* FAB ripple effect */
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+```
+
+---
+
+## 9. API Requirements (Future Backend)
+
+### Endpoints
+
+#### GET /api/user/score
+**Response**:
+```json
+{
+  "score": 84,
+  "history": [65, 68, 70...],
+  "trend": {
+    "direction": "up",
+    "value": 2.4
+  },
+  "lastUpdated": "2024-01-15T10:30:00Z"
+}
+```
+
+#### GET /api/user/goals
+**Response**:
+```json
+{
+  "goals": [
+    {
+      "id": "coding",
+      "title": "Coding Challenge",
+      "progress": 67,
+      "sparkline": [40, 60, 20...],
+      "target": 3,
+      "current": 2
+    }
+  ]
+}
+```
+
+#### POST /api/goals/{id}/complete
+**Request**:
+```json
+{
+  "timestamp": "2024-01-15T14:30:00Z",
+  "notes": "Completed LeetCode daily"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "newScore": 86,
+  "goalProgress": 100,
+  "message": "Great work! Goal completed."
+}
+```
+
+#### POST /api/voice/process
+**Request**:
+```json
+{
+  "transcript": "I completed my coding challenge",
+  "timestamp": "2024-01-15T14:30:00Z"
+}
+```
+
+**Response**:
+```json
+{
+  "understood": true,
+  "action": "complete",
+  "target": "coding",
+  "response": "Excellent! Your coding challenge...",
+  "dataUpdated": true
+}
+```
+
+---
+
+## 10. Mobile Considerations
+
+### Responsive Breakpoints
+```css
+/* Single column: 0-480px (default) */
+.app-container { max-width: 480px; }
+
+/* Tablet: 481-768px */
+@media (min-width: 481px) {
+  .goals-grid { 
+    grid-template-columns: repeat(2, 1fr); 
+  }
+}
+
+/* Desktop: 769px+ */
+@media (min-width: 769px) {
+  .app-container { max-width: 1024px; }
+  .goals-grid { 
+    grid-template-columns: repeat(3, 1fr); 
+  }
+}
+```
+
+### Touch Targets
+- Minimum: 44x44px (iOS standard)
+- FAB: 64x64px (easy thumb reach)
+- Cards: Full width, 16px gap
+- Voice orb: 120x120px (clear target)
+
+### Performance
+- Use CSS transforms (GPU-accelerated)
+- Debounce chart updates (max 60fps)
+- Lazy load sparklines (render on scroll)
+- Compress SVG paths (reduce points)
+
+---
+
+## 11. Accessibility
+
+### Color Contrast
+- All text: WCAG AAA (7:1 minimum)
+- Interactive elements: WCAG AA (4.5:1)
+- Gradients: Check both endpoints
+
+### Screen Readers
+```html
+<!-- Score card -->
+<div role="region" aria-label="Overall Score">
+  <div aria-live="polite" aria-atomic="true">
+    Score: 84, up 2.4 points from yesterday
+  </div>
+</div>
+
+<!-- Goals -->
+<div role="list" aria-label="Daily Goals">
+  <div role="listitem" aria-label="Coding Challenge: 67% complete">
+    ...
+  </div>
+</div>
+
+<!-- Voice button -->
+<button aria-label="Activate voice assistant">
+  🎤
+</button>
+```
+
+### Keyboard Navigation
+- Tab order: Header → Score → Goals → FAB
+- Enter/Space: Activate elements
+- Escape: Close voice modal
+- Arrow keys: Navigate goals
+
+---
+
+## 12. Testing Checklist
+
+### Functional Tests
+- [ ] Score updates correctly after goal completion
+- [ ] Chart animates smoothly with new data
+- [ ] Voice modal opens/closes properly
+- [ ] Sparklines render all 7 bars
+- [ ] Progress bars show correct percentages
+- [ ] Trend indicator updates (↑/↓)
+
+### Visual Tests
+- [ ] Gradients render on all browsers
+- [ ] Animations perform at 60fps
+- [ ] Colors match design system
+- [ ] Text is readable on all backgrounds
+- [ ] Touch targets are 44px minimum
+
+### Edge Cases
+- [ ] Score = 0 (empty state)
+- [ ] Score = 100 (max state)
+- [ ] All goals at 0%
+- [ ] All goals at 100%
+- [ ] No internet connection
+- [ ] Voice permission denied
+
+---
+
+## 13. Development Roadmap
+
+### Phase 1: MVP (Current)
+- ✅ Static dashboard with mock data
+- ✅ Basic voice interface simulation
+- ✅ Smooth chart rendering
+- ✅ Goal card components
+
+### Phase 2: Backend Integration
+- [ ] User authentication
+- [ ] Real-time data sync
+- [ ] Goal CRUD operations
+- [ ] History persistence
+
+### Phase 3: Voice AI
+- [ ] Speech-to-text integration
+- [ ] Natural language processing
+- [ ] Claude API for responses
+- [ ] Text-to-speech output
+
+### Phase 4: Advanced Features
+- [ ] Custom goal creation
+- [ ] Social sharing
+- [ ] Insights & recommendations
+- [ ] Notifications/reminders
+
+---
+
+## 14. Tech Stack Recommendations
+
+### Frontend
+- **Framework**: React Native (iOS + Android)
+- **State**: Redux Toolkit or Zustand
+- **Charts**: Victory Native or react-native-svg
+- **Animations**: Reanimated 2
+
+### Backend
+- **API**: Node.js + Express or Python + FastAPI
+- **Database**: PostgreSQL (relational data)
+- **Cache**: Redis (real-time scores)
+- **Auth**: Firebase Auth or Auth0
+
+### AI/Voice
+- **STT**: Whisper API or Google Cloud Speech
+- **NLP**: Claude API (Anthropic)
+- **TTS**: ElevenLabs or Google Cloud TTS
+
+### Infrastructure
+- **Hosting**: Vercel (frontend) + Railway (backend)
+- **CDN**: Cloudflare
+- **Monitoring**: Sentry
+- **Analytics**: PostHog
+
+---
+
+## 15. File Structure
+
+```
+ascend-app/
+├── src/
+│   ├── components/
+│   │   ├── ScoreCard.jsx
+│   │   ├── GoalCard.jsx
+│   │   ├── Chart.jsx
+│   │   ├── Sparkline.jsx
+│   │   ├── VoiceModal.jsx
+│   │   └── FAB.jsx
+│   ├── screens/
+│   │   ├── Dashboard.jsx
+│   │   ├── GoalDetail.jsx
+│   │   └── Settings.jsx
+│   ├── services/
+│   │   ├── api.js
+│   │   ├── voice.js
+│   │   └── storage.js
+│   ├── utils/
+│   │   ├── calculations.js
+│   │   ├── chartHelpers.js
+│   │   └── dateHelpers.js
+│   ├── hooks/
+│   │   ├── useScore.js
+│   │   ├── useGoals.js
+│   │   └── useVoice.js
+│   ├── store/
+│   │   ├── scoreSlice.js
+│   │   ├── goalsSlice.js
+│   │   └── voiceSlice.js
+│   └── App.jsx
+├── assets/
+│   ├── icons/
+│   └── fonts/
+├── tests/
+│   ├── components/
+│   └── utils/
+└── docs/
+    ├── API.md
+    └── DESIGN.md
+```
+
+---
+
+## 16. Quick Reference
+
+### Key Metrics
+- Target score range: 0-100
+- History length: 14 days
+- Goals per user: 3-8 recommended
+- Sparkline length: 7 days
+- Voice timeout: 10 seconds
+
+### Color Quick Access
+```
+Success: #6ee7b7
+Info: #93c5fd
+Warning: #fbbf24
+Error: #fecdd3
+Background: #0f172a
+```
+
+### Animation Timings
+```
+Fast: 0.3s (buttons)
+Medium: 0.6s (cards)
+Slow: 1s (data)
+Chart: 0.8s cubic-bezier(0.4, 0, 0.2, 1)
+```
+
+---
+
+**Last Updated**: January 2024  
+**Version**: 1.0.0  
+**Author**: Development Team
