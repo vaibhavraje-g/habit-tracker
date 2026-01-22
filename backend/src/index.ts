@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
 import { env, validateEnv } from './config/env.js';
 import { connectDB } from './config/db.js';
 import { errorMiddleware, notFoundHandler } from './middleware/index.js';
+import { setupSocketIO } from './socket.js';
 import {
   authRoutes,
   dashboardRoutes,
@@ -15,6 +17,10 @@ import {
 validateEnv();
 
 const app = express();
+const httpServer = createServer(app);
+
+// Setup Socket.IO
+const io = setupSocketIO(httpServer);
 
 // Middleware
 app.use(cors({
@@ -44,7 +50,7 @@ async function start() {
   try {
     await connectDB();
     
-    app.listen(env.port, () => {
+    httpServer.listen(env.port, () => {
       console.log(`
 🚀 Ascend Backend Server
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -52,6 +58,7 @@ async function start() {
 🏥 Health:     http://localhost:${env.port}/health
 🔐 Auth:       http://localhost:${env.port}/api/auth
 🤖 Agent:      http://localhost:${env.port}/api/agent/chat
+🔌 Socket.IO:  ws://localhost:${env.port}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       `);
     });

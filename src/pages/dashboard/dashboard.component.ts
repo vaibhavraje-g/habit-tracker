@@ -1,9 +1,10 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AsyncPipe } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 import { ThemeService } from '../../services/theme.service';
+import { VoiceService } from '../../services/voice.service';
 import { ScoreCardComponent } from '../../components/score-card/score-card.component';
 import { GoalCardComponent } from '../../components/goal-card/goal-card.component';
 import { ManifestationCardComponent } from '../../components/manifestation-card/manifestation-card.component';
@@ -35,9 +36,10 @@ interface DashboardData {
   ],
   templateUrl: './dashboard.component.html'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private api = inject(ApiService);
+  private voiceService = inject(VoiceService);
   auth = inject(AuthService);
   themeService = inject(ThemeService);
 
@@ -54,8 +56,6 @@ export class DashboardComponent implements OnInit {
 
   // Voice Interaction State
   isVoiceActive = signal(false);
-  voiceState = signal<'idle' | 'listening' | 'thinking' | 'responding'>('idle');
-  voiceTranscript = signal('');
 
   // Onboarding State
   showOnboarding = signal(false);
@@ -67,6 +67,10 @@ export class DashboardComponent implements OnInit {
     if (!hasSeenOnboarding) {
       this.showOnboarding.set(true);
     }
+  }
+
+  ngOnDestroy() {
+    this.voiceService.disconnect();
   }
 
   constructor() {
@@ -109,11 +113,6 @@ export class DashboardComponent implements OnInit {
     localStorage.setItem('ascend_onboarding_complete', 'true');
     localStorage.setItem('ascend_preferences', JSON.stringify(data));
     this.showOnboarding.set(false);
-    
-    // TODO: Create default goals based on selection
-    if (data.goals.length > 0) {
-      // Could call API to create suggested goals
-    }
   }
 
   skipOnboarding() {
@@ -122,83 +121,32 @@ export class DashboardComponent implements OnInit {
   }
 
   logout() {
+    this.voiceService.disconnect();
     this.auth.logout();
     this.router.navigate(['/']);
   }
 
   openVoice() {
     this.isVoiceActive.set(true);
-    this.voiceState.set('idle');
-    this.voiceTranscript.set('');
   }
 
   closeVoice() {
     this.isVoiceActive.set(false);
-    this.voiceState.set('idle');
   }
 
-  // Handle message from voice modal (via suggestion or speech)
-  handleVoiceMessage(message: string) {
-    this.voiceState.set('thinking');
-    this.voiceTranscript.set(`"${message}"`);
-    this.processAgentMessage(message);
-  }
-
-  startListening() {
-    this.voiceState.set('listening');
-    this.voiceTranscript.set('');
-
-    // Simulate listening then process through agent
-    setTimeout(() => {
-      const phrases = [
-        "I completed my coding challenge today",
-        "How is my status?",
-        "I practiced my affirmations",
-        "Add a new goal for meditation"
-      ];
-      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      
-      this.voiceTranscript.set(`"${randomPhrase}"`);
-      this.voiceState.set('thinking');
-      this.processAgentMessage(randomPhrase);
-    }, 2000);
-  }
-
-  private processAgentMessage(message: string) {
-    this.api.post<{ message: string; actions: any[]; updatedData: any }>('/agent/chat', { message }).subscribe({
-      next: (response) => {
-        this.voiceState.set('responding');
-        this.voiceTranscript.set(response.message);
-        
-        // Update UI with fresh data
-        if (response.updatedData) {
-          if (response.updatedData.goals) this.goals.set(response.updatedData.goals);
-          if (response.updatedData.manifestations) this.manifestations.set(response.updatedData.manifestations);
-          if (response.updatedData.score !== undefined) {
-            this.user.update(u => u ? { ...u, score: response.updatedData.score, history: response.updatedData.history || u.history } : u);
-          }
-        }
-        
-        // Auto close after reading
-        setTimeout(() => {
-          if (this.isVoiceActive()) {
-            this.closeVoice();
-          }
-        }, 4000);
-      },
-      error: (err) => {
-        console.error('Agent error:', err);
-        this.voiceState.set('responding');
-        this.voiceTranscript.set("Sorry, I could not process that. Please try again.");
-      }
-    });
+  // Handle data updates from voice modal (via Socket.IO)
+  handleDataUpdate(data: any) {
+    if (data.goals) this.goals.set(data.goals);
+    if (data.manifestations) this.manifestations.set(data.manifestations);
+    if (data.score !== undefined) {
+      this.user.update(u => u ? { ...u, score: data.score, history: data.history || u.history } : u);
+    }
   }
 
   // Check if score has meaningful history 
   hasScoreHistory(): boolean {
     const history = this.user()?.history || [];
     if (history.length < 2) return false;
-    // Check if there's any variation in history
     return history.some((h, i) => i > 0 && h !== history[0]);
   }
 }

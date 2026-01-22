@@ -181,11 +181,8 @@
 <!-- Voice Modal Overlay -->
 <app-voice-modal 
   [isActive]="isVoiceActive()"
-  [state]="voiceState()"
-  [transcript]="voiceTranscript()"
   (close)="closeVoice()"
-  (startListening)="startListening()"
-  (sendMessage)="handleVoiceMessage($event)">
+  (dataUpdated)="handleDataUpdate($event)">
 </app-voice-modal>
 
 <style>
