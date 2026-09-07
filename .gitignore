@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+# Ephemeral & local agent states
+.claude/
+.kilo/
+*.pid
