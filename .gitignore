@@ -28,3 +28,8 @@ dist-ssr
 .claude/
 .kilo/
 *.pid
+
+# Environment files
+.env
+*.env
+backend/.env
